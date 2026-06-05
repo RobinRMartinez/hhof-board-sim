@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HHOF Board Simulation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    .container { width: 100%; max-width: 780px; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .header-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .header-logo .flag {
+      font-size: 28px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #002868;
+      letter-spacing: -0.3px;
+    }
+    .header p {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+    .header-bar {
+      height: 4px;
+      background: linear-gradient(90deg, #C8102E 33%, #ffffff 33%, #ffffff 66%, #002868 66%);
+      border-radius: 2px;
+      margin-top: 12px;
+    }
+
+    /* Board member cards */
+    .board-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+    .board-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 auto 8px;
+    }
+    .av-fred { background: #dbeafe; color: #1e40af; }
+    .av-mike { background: #dcfce7; color: #166534; }
+    .av-pat  { background: #fef3c7; color: #92400e; }
+    .board-name { font-size: 13px; font-weight: 600; color: #111827; }
+    .board-role { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+    /* Vote tracker */
+    .vote-section { margin-bottom: 1rem; }
+    .vote-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .vote-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .vote-card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .vote-name { font-size: 11px; color: #6b7280; margin-bottom: 3px; }
+    .vote-status { font-size: 14px; font-weight: 600; color: #9ca3af; }
+    .vote-yes { color: #16a34a; }
+    .vote-no  { color: #dc2626; }
+
+    /* Chat */
+    .chat-section { margin-bottom: 1rem; }
+    .chat-box {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      height: 360px;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+    .msg { display: flex; gap: 10px; align-items: flex-start; }
+    .msg.user { flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .msg-col { display: flex; flex-direction: column; max-width: 78%; }
+    .msg.user .msg-col { align-items: flex-end; }
+    .msg-sender { font-size: 11px; color: #9ca3af; margin-bottom: 3px; }
+    .msg.user .msg-sender { text-align: right; }
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .bubble-board {
+      background: #f3f4f6;
+      color: #111827;
+      border-bottom-left-radius: 4px;
+    }
+    .bubble-user {
+      background: #002868;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .av-you { background: #C8102E; color: #fff; }
+
+    /* Typing indicator */
+    .typing {
+      font-size: 13px;
+      color: #9ca3af;
+      min-height: 20px;
+      padding: 4px 0;
+      font-style: italic;
+    }
+
+    /* Starters */
+    .starters-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .starters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .starter-btn {
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .starter-btn:hover { background: #f9fafb; }
+
+    /* Input row */
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .mic-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #6b7280;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 18px;
+      transition: all 0.15s;
+    }
+    .mic-btn.listening {
+      background: #fee2e2;
+      border-color: #dc2626;
+      color: #dc2626;
+    }
+    .mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .text-input {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      color: #111827;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .text-input:focus { border-color: #002868; }
+    .send-btn {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 8px;
+      background: #C8102E;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .send-btn:hover { background: #a50d25; }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Footer row */
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .mic-hint { font-size: 11px; color: #9ca3af; }
+    .reset-btn {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      background: transparent;
+      color: #6b7280;
+      cursor: pointer;
+    }
+    .reset-btn:hover { background: #f9fafb; }
+
+    /* No speech warning */
+    .no-speech {
+      font-size: 12px;
+      color: #dc2626;
+      display: none;
+      margin-top: 4px;
+    }
+
+    /* Responsive */
+    @media (max-width: 500px) {
+      .board-row, .vote-row { grid-template-columns: 1fr; }
+      .chat-box { height: 280px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">
+      <span class="flag">🏒</span>
+      <h1>USA 80+ Hockey Hall of Fame</h1>
+      <span class="flag">🇺🇸</span>
+    </div>
+    <p>Board Induction Simulation — Propose a candidate and earn all three votes</p>
+    <div class="header-bar"></div>
+  </div>
+
+  <!-- Board members -->
+  <div class="board-row">
+    <div class="board-card">
+      <div class="avatar av-fred">FM</div>
+      <div class="board-name">Fred Merchant</div>
+      <div class="board-role">Founder · Legacy &amp; Heart</div>
+    </div>
+    <div class="board-card">
+      <div class="avatar av-mike">MR</div>
+      <div class="board-name">Mike</div>
+      <div class="board-role">Operations · Budget &amp; Logistics</div>
+    </div>
+    <div class="board-card">
+      <div class="avatar av-pat">PL</div>
+      <div class="board-name">Patrick Long</div>
+      <div class="board-role">Academic · Criteria &amp; Process</div>
+    </div>
+  </div>
+
+  <!-- Vote tracker -->
+  <div class="vote-section">
+    <div class="vote-label">Board Votes</div>
+    <div class="vote-row">
+      <div class="vote-card">
+        <div class="vote-name">Fred Merchant</div>
+        <div class="vote-status" id="v-fred">—</div>
+      </div>
+      <div class="vote-card">
+        <div class="vote-name">Mike</div>
+        <div class="vote-status" id="v-mike">—</div>
+      </div>
+      <div class="vote-card">
+        <div class="vote-name">Patrick Long</div>
+        <div class="vote-status" id="v-pat">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat -->
+  <div class="chat-section">
+    <div class="chat-box" id="chatBox">
+      <div class="msg">
+        <div class="msg-avatar av-fred">FM</div>
+        <div class="msg-col">
+          <div class="msg-sender">Fred Merchant</div>
+          <div class="bubble bubble-board">Welcome to the HHOF board meeting. The chair has the floor — who are you proposing for induction today, and why do they deserve a place in the Hall?</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="typing" id="typing"></div>
+  <div class="no-speech" id="noSpeech">Speech recognition requires Chrome or Edge browser.</div>
+
+  <!-- Quick starters -->
+  <div class="starters-label">Quick starters</div>
+  <div class="starters">
+    <button class="starter-btn" onclick="fill('I would like to nominate a player who has been actively playing hockey into their 80s.')">Nominate a player</button>
+    <button class="starter-btn" onclick="fill('What criteria matter most to each of you for induction?')">Ask about criteria</button>
+    <button class="starter-btn" onclick="fill('How many years of active involvement are required for eligibility?')">Ask about rules</button>
+    <button class="starter-btn" onclick="fill('I would like to call for a formal vote on this candidate.')">Call for a vote</button>
+  </div>
+
+  <!-- Input -->
+  <div class="input-row">
+    <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Tap to speak" aria-label="Toggle microphone">🎤</button>
+    <input class="text-input" id="userInput" type="text" placeholder="Address the board..." onkeydown="if(event.key==='Enter') sendMsg()" />
+    <button class="send-btn" id="sendBtn" onclick="sendMsg()">Send</button>
+  </div>
+
+  <div class="footer-row">
+    <span class="mic-hint" id="micHint">Tap mic to speak — auto-sends after a pause (Chrome/Edge)</span>
+    <button class="reset-btn" onclick="resetSim()">↺ Start over</button>
+  </div>
+
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────────────────
+  const SUPABASE_URL = "https://zgddygbaqdjoqavjsasv.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_k3YegsHRQQwM7f5-9Nb-uw_E0WB4Fm-"; // Replace with your anon key
+  const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/hhof-board-sim`;
+
+  // ─── STATE ────────────────────────────────────────────────────────────────
+  let history = [];
+  let recognition = null;
+  let listening = false;
+  let silTimer = null;
+
+  // ─── UTILITIES ────────────────────────────────────────────────────────────
+  function fill(text) {
+    document.getElementById("userInput").value = text;
+    document.getElementById("userInput").focus();
+  }
+
+  function extractVotes(text) {
+    const match = text.match(/\{[^}]*"fred"\s*:/);
+    if (!match) return null;
+    const start = text.lastIndexOf("{");
+    const end = text.lastIndexOf("}");
+    if (start === -1 || end === -1) return null;
+    try { return JSON.parse(text.slice(start, end + 1)); } catch { return null; }
+  }
+
+  function setVote(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (val === "yes")        { el.textContent = "✓ Yes"; el.className = "vote-status vote-yes"; }
+    else if (val === "no")    { el.textContent = "✗ No";  el.className = "vote-status vote-no"; }
+    else                      { el.textContent = "—";     el.className = "vote-status"; }
+  }
+
+  function parseLines(text) {
+    const clean = text.replace(/\{[\s\S]*?\}[\s]*$/, "").trim();
+    const names = [...clean.matchAll(/\*\*(Fred|Mike|Patrick)[:\s*]*/g)].map(m => m[1]);
+    const parts = clean.split(/\*\*(?:Fred|Mike|Patrick)[:\s*]*/);
+    const out = [];
+    names.forEach((n, i) => {
+      const c = parts[i + 1]?.trim().replace(/\*\*/g, "");
+      if (c) out.push({ n, c });
+    });
+    return out.length ? out : [{ n: "Board", c: clean.replace(/\*\*/g, "") }];
+  }
+
+  // ─── CHAT UI ──────────────────────────────────────────────────────────────
+  const avatarMap = {
+    Fred:    { cls: "av-fred", init: "FM" },
+    Mike:    { cls: "av-mike", init: "MR" },
+    Patrick: { cls: "av-pat",  init: "PL" },
+    Board:   { cls: "av-fred", init: "BD" },
+  };
+
+  function addUserBubble(text) {
+    const box = document.getElementById("chatBox");
+    box.innerHTML += `
+      <div class="msg user">
+        <div class="msg-avatar av-you">You</div>
+        <div class="msg-col">
+          <div class="msg-sender">You (Chair)</div>
+          <div class="bubble bubble-user">${escHtml(text)}</div>
+        </div>
+      </div>`;
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function addBoardBubbles(lines) {
+    const box = document.getElementById("chatBox");
+    lines.forEach(({ n, c }) => {
+      const av = avatarMap[n] || { cls: "av-pat", init: n[0] };
+      box.innerHTML += `
+        <div class="msg">
+          <div class="msg-avatar ${av.cls}">${av.init}</div>
+          <div class="msg-col">
+            <div class="msg-sender">${escHtml(n)}</div>
+            <div class="bubble bubble-board">${escHtml(c)}</div>
+          </div>
+        </div>`;
+    });
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // ─── SEND MESSAGE ─────────────────────────────────────────────────────────
+  async function sendMsg() {
+    const input = document.getElementById("userInput");
+    const text = input.value.trim();
+    if (!text) return;
+    if (listening) stopMic(false);
+
+    input.value = "";
+    document.getElementById("sendBtn").disabled = true;
+    addUserBubble(text);
+    history.push({ role: "user", content: text });
+    document.getElementById("typing").textContent = "The board is deliberating...";
+
+    try {
+      const res = await fetch(EDGE_FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ messages: history }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      const reply = data.text || "";
+      history.push({ role: "assistant", content: reply });
+
+      const votes = extractVotes(reply);
+      if (votes) {
+        setVote("v-fred", votes.fred);
+        setVote("v-mike", votes.mike);
+        setVote("v-pat",  votes.pat);
+      }
+
+      addBoardBubbles(parseLines(reply));
+
+    } catch (err) {
+      console.error(err);
+      addBoardBubbles([{ n: "System", c: "Connection error — please try again." }]);
+    }
+
+    document.getElementById("typing").textContent = "";
+    document.getElementById("sendBtn").disabled = false;
+    document.getElementById("userInput").focus();
+  }
+
+  // ─── SPEECH RECOGNITION ───────────────────────────────────────────────────
+  function initSpeech() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      document.getElementById("micBtn").disabled = true;
+      document.getElementById("noSpeech").style.display = "block";
+      document.getElementById("micHint").style.display = "none";
+      return false;
+    }
+    recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (e) => {
+      let fin = "", interim = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) fin += e.results[i][0].transcript;
+        else interim += e.results[i][0].transcript;
+      }
+      if (fin) {
+        document.getElementById("userInput").value =
+          (document.getElementById("userInput").value + " " + fin).trim();
+        clearTimeout(silTimer);
+        silTimer = setTimeout(() => { if (listening) stopMic(true); }, 1800);
+      } else if (interim) {
+        document.getElementById("typing").textContent = "Hearing: " + interim;
+      }
+    };
+
+    recognition.onerror = (e) => { if (e.error !== "no-speech") stopMic(false); };
+    recognition.onend   = ()  => { if (listening) { try { recognition.start(); } catch {} } };
+    return true;
+  }
+
+  function toggleMic() {
+    if (listening) { stopMic(true); return; }
+    if (!recognition && !initSpeech()) return;
+    startMic();
+  }
+
+  function startMic() {
+    listening = true;
+    document.getElementById("micBtn").classList.add("listening");
+    document.getElementById("micHint").textContent = "Listening... tap mic again to stop";
+    document.getElementById("typing").textContent = "";
+    try { recognition.start(); } catch {}
+  }
+
+  function stopMic(autoSend) {
+    listening = false;
+    clearTimeout(silTimer);
+    document.getElementById("micBtn").classList.remove("listening");
+    document.getElementById("micHint").textContent = "Tap mic to speak — auto-sends after a pause (Chrome/Edge)";
+    document.getElementById("typing").textContent = "";
+    try { recognition.stop(); } catch {}
+    if (autoSend && document.getElementById("userInput").value.trim()) {
+      setTimeout(sendMsg, 300);
+    }
+  }
+
+  // ─── RESET ────────────────────────────────────────────────────────────────
+  function resetSim() {
+    if (listening) stopMic(false);
+    history = [];
+    document.getElementById("chatBox").innerHTML = `
+      <div class="msg">
+        <div class="msg-avatar av-fred">FM</div>
+        <div class="msg-col">
+          <div class="msg-sender">Fred Merchant</div>
+          <div class="bubble bubble-board">Welcome to the HHOF board meeting. The chair has the floor — who are you proposing for induction today, and why do they deserve a place in the Hall?</div>
+        </div>
+      </div>`;
+    setVote("v-fred", "undecided");
+    setVote("v-mike", "undecided");
+    setVote("v-pat",  "undecided");
+    document.getElementById("typing").textContent = "";
+    document.getElementById("sendBtn").disabled = false;
+    document.getElementById("userInput").value = "";
+  }
+</script>
+</body>
+</html>
